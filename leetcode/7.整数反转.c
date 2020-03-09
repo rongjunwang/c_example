@@ -8,12 +8,16 @@
 
 
 int reverse(int x){
-    int a = 0;
-    while(x > 10 || x < -10){
+    long a = 0;
+    while(x != 0){
         a = x%10 + a*10; 
         x=x/10;
     }
-    a = a*10 + x;
+    
+    if(a > 2147483647 || a < -2147483648){
+        return 0;
+    }
+
     return a;
 }
 
