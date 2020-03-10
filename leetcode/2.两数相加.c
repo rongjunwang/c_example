@@ -12,21 +12,51 @@
  *     struct ListNode *next;
  * };
  */
-
-
 struct ListNode* addTwoNumbers(struct ListNode* l1, struct ListNode* l2){
-    struct ListNode* result;
-    struct ListNode* temp = NULL;
-    while(l1->next != NULL){
+    struct ListNode* headnode = NULL;
+    headnode = (struct ListNode*)malloc(sizeof(struct ListNode));
+    headnode->next = NULL;
+    headnode->val = 0;
+
+    struct ListNode* temp = (struct ListNode*)malloc(sizeof(struct ListNode));
+    headnode = temp;
+    int add = 0 ;
+
+    while(l1 != NULL || l2 != NULL || add){
+
+        struct ListNode* newnode = (struct ListNode*)malloc(sizeof(struct ListNode));
+
         if(l1 != NULL && l2 != NULL){
-            result->val = l1->val + l2->val;
-            result->next = &temp;
+            newnode->next = NULL;
+            newnode->val = l1->val + l2->val + add;
+            l1 = l1->next;
+            l2 = l2->next;
+        }else if(l1 != NULL && l2 == NULL){
+            newnode->next = NULL;
+            newnode->val = l1->val + add;
+            l1 = l1->next;
+        }else if(l1 == NULL && l2 != NULL){
+            newnode->next = NULL;
+            newnode->val = l2->val + add;
+            l2 = l2->next;
+        }else{
+            newnode->next = NULL;
+            newnode->val = add;
         }
-        temp = result;
-        l1 = l1->next;
-        l2 = l2->next;
+
+        //进位处理
+        if(newnode->val >= 10){
+            newnode->val = newnode->val % 10;
+            add = 1;
+        }else{
+            add = 0;
+        }
+
+        temp->next = newnode;
+        temp = temp->next;
     }
-    return result;
+
+    return headnode->next;
 }
 
 
