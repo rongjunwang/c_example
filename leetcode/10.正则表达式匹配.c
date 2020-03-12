@@ -7,52 +7,25 @@
 // @lc code=start
 
 //动态规划
-int isMatch(char * s, char * p){
-    int** dp;
-    dp = (int **)malloc(sizeof(int *) * strlen(s));
-    for(int i = 0; i < strlen(s); i++){
-        dp[i] = (int *)malloc(sizeof(int) * strlen(p));
-    }
-
-    for (int i=0;i<strlen(s); i++)
-    {
-        for(int j=0;j<strlen(p);j++)
-        {
-            dp[i][j] = 0;
-        }
-    }
-
-    dp[0][0] = 1;
-    for(int j=1;j<strlen(p) - 1;j++)
-    {
-        if(p[j] == '*' && dp[0][j-1] == 1 )
-        {
-            dp[0][j+1] = 1;
-        }else{
-            dp[0][j] = 0;
-        }
-    }
-    for (int i=0;i<strlen(s); i++)
-    {
-        for(int j=1;j<strlen(p);j++)
-        {
-            if(p[j] == s[i]){
-                dp[i][j] = dp[i-1][j-1];
-            }else if(p[j] == '*'){
-                if(p[j-1] == s[i] || p[j-1] == '.'){
-                    dp[i][j] = dp[i-1][j];
-                }else if(p[j-1] != s[i]){
-                    dp[i][j] = dp[i-1][j-2];
-                }else{
-                    return 0;
-                }
-            }else{
-                return 0;
+bool isMatch(char * s, char * p){
+    int sl = strlen(s);
+    int pl = strlen(p);
+    bool dp[sl + 1][pl + 1];
+    memset(dp, 0, sizeof(dp));
+    for (int i = sl; i > -1; --i) {
+        for (int j = pl; j > -1; --j) {
+            if (i == sl && j == pl) {
+                dp[i][j] = true;
+                continue;
+            }
+            if (pl - j > 1 && p[j + 1] == '*') {
+                dp[i][j] = dp[i][j + 2] || (i < sl && (p[j] == '.' || p[j] == s[i]) && dp[i + 1][j]);
+            } else {
+                dp[i][j] = i < sl && (p[j] == '.' || p[j] == s[i]) && dp[i + 1][j + 1];
             }
         }
     }
-
-    return dp[strlen(s)-1][strlen(p)-1];
+    return dp[0][0];
 }
 
 
