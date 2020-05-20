@@ -9,7 +9,6 @@
  * Definition for singly-linked list.
  */
 
-
 struct ListNode* rotateRight(struct ListNode* head, int k){
     if(k==0 || head == NULL) return head;
 
