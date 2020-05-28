@@ -5,139 +5,179 @@
  */
 
 // @lc code=start
-
-typedef struct DoublyLinkListNode{
+#define MAX_SIZE 1024
+typedef struct doublyLinkList{
     int key;
-    struct DoublyLinkListNode* pre;
-    struct DoublyLinkListNode* next;
+    struct doublyLinkList* pre;
+    struct doublyLinkList* next;
     int value;
-}DLNode;
+} DLNode;
 
-typedef struct LastRUCache{
+typedef struct {
+    int key;
+    DLNode* node;
+    DLNode* next;
+} hashTable;
+
+typedef struct {
     int capacity;
+    int used;
+
+    //双端链表
     DLNode* head;
     DLNode* tail;
 
-    int used;
-    DLNode* hash[10];
+    //hashtable
+    hashTable* hashtable[MAX_SIZE];
 } LRUCache;
-
+void show(LRUCache *obj);
+//time33算法
+unsigned int time33(int key){
+    return key%MAX_SIZE;
+}
 
 LRUCache* lRUCacheCreate(int capacity) {
-    LRUCache* cache = (LRUCache*)malloc(sizeof(LRUCache));
-    cache->head = (DLNode*)malloc(sizeof(DLNode));
+    LRUCache* cache = malloc(sizeof(LRUCache));
     cache->head = NULL;
-    cache->tail = (DLNode*)malloc(sizeof(DLNode));
     cache->tail = NULL;
     cache->used = 0;
-    for(int i=0;i<10;i++){
-        cache->hash[i] = (DLNode*)malloc(sizeof(DLNode));
-        cache->hash[i] = NULL;
+    for(int i=0;i<MAX_SIZE;i++){
+        cache->hashtable[i] = NULL;
     }
     cache->capacity = capacity;
     return cache;
 }
 
-int lRUCacheGet(LRUCache* obj, int key) {
-    if(obj->hash[key] != NULL){
-        if(obj->hash[key]->pre != NULL){
-            if(obj->hash[key]->next == NULL){
-                obj->tail = obj->hash[key]->pre;
-                obj->tail->next = NULL;
+void LRUCacheClean(LRUCache* obj){
+    //使用空间大于预设大小，触发清除
+    if(obj->used > obj->capacity){
+        //1.清除双端链表节点
+        int keyClean = obj->tail->key;
+        obj->tail->pre->next = NULL;
+        obj->tail = obj->tail->pre; 
+
+        //2.清空hashtable里面的数据
+        unsigned int hash = time33(keyClean);
+        hashTable* table = obj->hashtable[hash];
+        hashTable* temp = NULL;
+        while(table != NULL){
+            if(table->key == keyClean){
+                if(temp != NULL) temp->next = table->next;
+                else obj->hashtable[hash] = table->next;
             }
-            obj->hash[key]->pre->next = obj->hash[key]->next;
-            obj->hash[key]->next->pre = obj->hash[key]->pre; 
-
-            obj->head->pre = obj->hash[key];
-            obj->hash[key]->next = obj->head;
-            obj->hash[key]->pre = NULL;
-            obj->head = obj->hash[key];
+            //记录上一次的节点
+            temp = table;
+            table = table->next;
         }
-        printf("get\n");
-        show(obj);
-        return obj->hash[key]->value;
+        obj->used--;
     }
+}
 
+//改变节点放在首部
+void lRUCacheChangeFirst(LRUCache* obj, DLNode* node){
+    if(node->pre == NULL) return;
+    node->pre->next = node->next;
+    if(node->next) node->next->pre = node->pre;
+    else obj->tail = node->pre;
+    node->pre = NULL;
+    node->next = obj->head;
+    obj->head->pre = node;
+    obj->head = node;
+}
+
+int LRUCacheGetKey(hashTable* table, int key){
+    while(table){
+        if(table->key == key) return 1;
+        table = table->next;
+    }
+    return 0;
+}
+
+int lRUCacheGet(LRUCache* obj, int key) {
+    unsigned int hash = time33(key);
+    hashTable *table = malloc(sizeof(hashTable));
+    table = obj->hashtable[hash];
+    while(table){
+        if(table->key == key){
+            lRUCacheChangeFirst(obj, table->node);
+            return table->node->value;
+        };
+        table = table->next;
+    }
     return -1;
 }
 
 void lRUCachePut(LRUCache* obj, int key, int value) {
+    unsigned int hash = time33(key);
+    hashTable *table = malloc(sizeof(hashTable));
+    table = obj->hashtable[hash];
 
-    //如果存在，放在首部
-    if(obj->hash[key] != NULL){
-        if(obj->hash[key]->pre != NULL){
-            if(obj->hash[key]->next == NULL){
-                obj->tail = obj->hash[key]->pre;
-                obj->tail->next = NULL;
-            }
-            obj->head->pre = obj->hash[key];
-            obj->hash[key]->next = obj->head;
-            obj->hash[key]->pre = NULL;
-            obj->head = obj->hash[key];
-        }
-        obj->hash[key]->value = value;
+    //寻找hash
+    while(table){
+        if(table->key == key){
+            lRUCacheChangeFirst(obj, table->node);
+            table->node->value = value;
+            return;
+        };
+        table = table->next;
     }
-    else
-    {
-        if(obj->head == NULL){
-            DLNode* dlnode = (DLNode*)malloc(sizeof( DLNode ));
-            dlnode->next = NULL;
-            dlnode->pre = NULL;
-            dlnode->value = value;
-            dlnode->key = key;
 
-            obj->head= dlnode;
-            obj->tail = dlnode;
-            
-            obj->hash[key] = dlnode;
-            obj->used++;
-        }else{
-            DLNode* dlnode = (DLNode*)malloc(sizeof( DLNode ));
-            dlnode->next = obj->head;
-            dlnode->pre = NULL;
-            dlnode->value = value;
-            dlnode->key = key;
-
-            obj->head->pre = dlnode;
-            obj->head = dlnode;
-
-            obj->hash[key] = dlnode;
-            obj->used++;
-        }
-
-        if(obj->used > obj->capacity){
-            if(obj->tail->key != NULL){
-                int overdutKey = obj->tail->key;
-                obj->tail->pre->next = NULL;
-                obj->tail = obj->tail->pre;
-                obj->used--;
-
-                obj->hash[overdutKey] = NULL;
-            }
-        }
+    //插入节点到双端链表
+    DLNode* dlnode = malloc(sizeof( DLNode ));
+    dlnode->pre = NULL;
+    dlnode->next = obj->head == NULL ? NULL : obj->head;
+    dlnode->key = key;
+    dlnode->value = value;
+    if(obj->head != NULL){
+        obj->head->pre = dlnode;
+        obj->head = dlnode; 
+    }else{
+        obj->head = dlnode;
+        obj->tail = dlnode;
     }
-    
 
+    //hashtable更新
+    hashTable *newTable = malloc(sizeof(hashTable));
+    newTable->key = key;
+    newTable->node = dlnode;
+    newTable->next = obj->hashtable[hash];
+    obj->hashtable[hash] = newTable; 
     
-    show(obj);
+    //添加次数
+    obj->used++;
+
+    //超过预设值，清除
+    LRUCacheClean(obj);
 }
 
 void lRUCacheFree(LRUCache* obj) {
-    free(obj);
+
 }
 
 void show(LRUCache *obj){
-    
-    printf("%p-%p-%d-%d\n",obj->head,obj->tail,obj->capacity,obj->used);
-    DLNode* dlnode = obj->head;
-    while(dlnode !=  NULL){
-        printf("%p-%p-%p-%d-%d\n",dlnode,dlnode->pre,dlnode->next,dlnode->key,dlnode->value);
-        dlnode = dlnode->next;
+    printf("capacity=%d\n",obj->capacity);
+    printf("used=%d\n",obj->used);
+
+    DLNode *node = obj->head;
+    printf("head=%p;tail=%p\n", obj->head, obj->tail);
+    while(node != NULL){
+        printf("%d;%d;%p;%p;%p\n",node->key,node->value,node,node->pre,node->next);
+        node = node->next;
     }
     printf("\n");
-        
-}
 
+    for (int i = 0; i < MAX_SIZE; i++)
+    {
+        hashTable* table = obj->hashtable[i];
+        if(table != NULL){
+            while(table){
+                printf("%d;%d;%p;%p;%p\n",i,table->key,table,table->next,table->node);
+                table = table->next;
+            }
+        }
+    }
+    printf("\n");
+}
 
 /**
  * Your LRUCache struct will be instantiated and called as such:
