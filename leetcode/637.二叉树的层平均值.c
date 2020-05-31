@@ -27,23 +27,36 @@ void getTreeDepth(struct TreeNode* root,int temp,int* level){
     }
 }
 
-void levelOrderTree(struct TreeNode* root,int level, double* res){
+void levelOrderTree(struct TreeNode* root,int level,int* flag, double* res){
     if(root){
-        res[level] = res[level] == 0 ? root->val : (res[level]+root->val)/2;
-        printf("%lf\n",res[level]);
-        levelOrderTree(root->left, level+1, res);
-        levelOrderTree(root->right, level+1, res);
+        res[level] += root->val;
+        flag[level] += 1;
+        levelOrderTree(root->left, level+1, flag, res);
+        levelOrderTree(root->right, level+1, flag, res);
     }
 }
 
 double* averageOfLevels(struct TreeNode* root, int* returnSize){
+    if(!root){
+        *returnSize = 0;
+        double* res = NULL;
+        return res;
+    }
+    
     int* level = malloc(sizeof(int));
     getTreeDepth(root, 0, level);
     *returnSize = *level;
     
     double* res = malloc((*level) * sizeof(double));
-    memset(res, NULL, sizeof(double) * (*level));
-    levelOrderTree(root,0,res);
+    int* flag = malloc((*level) * sizeof(int));
+    memset(res, 0, sizeof(double) * (*level));
+    memset(flag, 0, sizeof(int) * (*level));
+    levelOrderTree(root, 0, flag, res);
+
+    for(int i=0;i<*level;i++){
+        res[i] = res[i] / flag[i];
+    }
+
     return res;
 }
 
