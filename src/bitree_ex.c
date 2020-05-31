@@ -7,6 +7,10 @@ typedef struct bitree{
     struct Tree* right;
 } biTree;
 
+//树读遍历方式：
+//广度遍历包含-前序遍历，中序遍历，后序遍历
+//深度遍历包含-层遍历
+
 biTree* create_bitree(){
     char data;
     biTree* tree; 
@@ -51,14 +55,18 @@ void nextOrderTree(biTree* tree){
 }
 
 //层遍历
-void levelOrderTree(biTree* tree){
-    while(tree){
-        tree = tree->left;
-
+void levelOrderTree(biTree* tree, int level,int* j,char** res){
+   if(tree){
+       if(!res[level]){
+           res[level] = calloc(10,sizeof(char));
+           j[level] = 0;
+        } 
+        res[level][j[level]++] = tree->data;
+        printf("%d;%d;%c\n",level,j,tree->data);
+        levelOrderTree(tree->left,level+1,j,res);
+        levelOrderTree(tree->right,level+1,j,res);
     }
 }
-
-//深度优先遍历
 
 void main(){
     biTree* tree = create_bitree();
@@ -70,4 +78,9 @@ void main(){
 
     nextOrderTree(tree);
     printf("\n");
+
+    char** res = calloc(100,sizeof(char*));
+    int* j = calloc(100,sizeof(int));
+    levelOrderTree(tree,0,j,res);
+    printf("%s-%s-%s\n",res[0],res[1],res[2]);
 }
